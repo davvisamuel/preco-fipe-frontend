@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preço FIPE</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="shortcut icon" href="img/fav_icon.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="js/script.js" defer></script>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html"><img class="logo" src="img/logo.png" alt="Logo do Preço FIPE"></a>
+
+            <div class="options">
+                <a href="#">Categorias</a>
+                <a href="#">Recentes</a>
+                <a href="#">Ajuda</a>
+            </div>
+
+            <a href="#">
+                <i class="fa-regular fa-user"></i>
+                Entrar
+            </a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="search-fipe">
+            <div id="search-box">
+                <form>
+                    <!-- <fieldset id="vehicle-type">
+                        <input type="radio" id="cars" name="vehicleType" value="cars" checked>
+                        <label for="cars">Carros</label>
+
+                        <input type="radio" id="motorcycles" name="vehicleType" value="motorcycles">
+                        <label for="motorcycles">Motos</label>
+                    </fieldset> -->
+                    <select name="vehicle-type" id="vehicle-type">
+                        <option value="cars" selected>Carros</option>
+                        <option value="motorcycles">Motos</option>
+                    </select>
+
+                    <div class="vehicle-info">
+                        <select name="brand" id="brand" required>
+                            <option value="" disabled selected>Escolha a marca</option>
+                        </select>
+
+                        <select name="model" id="model" required disabled>
+                            <option value="" disabled selected>Escolha o modelo</option>
+                        </select>
+
+                        <select name="year" id="year" required disabled>
+                            <option value="" disabled selected>Escolha o ano</option>
+                        </select> 
+                        
+                        <button type="submit" class="submit" disabled>Buscar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- <section id="favorites">
+            <h2>Consultas rápidas</h2>
+            <div id="favorites-container">
+
+                <div class="favorite-box">
+                    <div class="title-box">
+                        <h3 class="title-car">Honda civic</h3>
+                    </div>
+                </div>
+            </div>
+        </section> -->
+    </main>
+</body>
+</html>
