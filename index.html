@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Preço FIPE</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/style.css">
     <link rel="shortcut icon" href="img/fav_icon.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="js/script.js" defer></script>
@@ -12,22 +12,24 @@
 <body>
     <header>
         <nav class="navbar">
-            <a href="index.html"><img class="logo" src="img/logo.png" alt="Logo do Preço FIPE"></a>
+            <a href="index.html">
+                <img class="navbar-logo" src="img/logo.png" alt="Logo do Preço FIPE">
+            </a>
 
-            <div class="options">
+            <div class="navbar-links">
                 <a href="#">Categorias</a>
-                <a href="#">Recentes</a>
+                <a href="recentes.html">Recentes</a>
                 <a href="#">Ajuda</a>
             </div>
 
-            <a href="#">
+            <a class="navbar-auth" href="login.html">
                 <i class="fa-regular fa-user"></i>
                 Entrar
             </a>
         </nav>
     </header>
 
-    <main>
+    <main class="main">
         <section id="search-fipe">
             <div id="search-box">
                 <form>
