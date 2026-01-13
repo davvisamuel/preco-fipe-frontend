@@ -15,6 +15,10 @@ button {
     font-family: "Jost", sans-serif;
 }
 
+h2, h3 {
+    color: #333;
+}
+
 body {
     background-color: #f2f2f2;
     font-family: "Jost", sans-serif;
@@ -40,6 +44,10 @@ header {
 .navbar-links {
     display: flex;
     gap: 40px;
+}
+
+.navbar-auth {
+    cursor: pointer;
 }
 
 .main {
@@ -121,8 +129,42 @@ header {
 }
 
 #favorites-container {
+    position: relative;
     display: flex;
+    align-items: center;
     justify-content: space-between;
+}
+
+#favorites-container i {
+    cursor: pointer;
+    position: absolute;
+    opacity: .7;
+    font-size: 28px;
+    color: #333;
+    display: none;
+    transition: 0.3s;
+}
+
+#favorites-container:hover i {
+    display: inline;
+}
+
+#favorites-container i:hover {
+    opacity: 1;
+}
+
+.fa-circle-chevron-left {
+    left: -10px;
+}
+
+.fa-circle-chevron-right {
+    right: -10px;
+}
+
+#favorite-boxes {
+    width: 100%;
+    display: flex;
+    gap: 2%;
 }
 
 .favorite-box {
@@ -133,6 +175,7 @@ header {
     border-radius: 8px;
     display: flex;
     align-items: end;
+    cursor: pointer;
 }
 
 .title-box {
@@ -317,4 +360,149 @@ header {
 
 .remove-all-box:hover {
     background-color: #dddcdc;
+}
+
+/* user */
+.modal-container {
+    background: rgba(0,0,0,0.5);
+    top: 0;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.user-container {
+    position: fixed;
+    margin-top: 4rem;
+    background-color: #f2f2f2;
+    width: 50%;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+.close-modal {
+    position: absolute;
+    right: 1.5rem;
+    top: .8rem;
+    font-size: 36px;
+    cursor: pointer;
+}
+
+#security {
+    width: 33%;
+    background-color: #FFF;
+    border-radius: 10px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.credentials,
+.delete {
+    margin-top: .5rem;
+    border: none;
+    border-radius: 8px;
+    color: #FFF;
+    padding: 8px 20px;
+    cursor: pointer;
+}
+
+.credentials:hover,
+.delete:hover {
+    opacity: .9;
+}
+
+.credentials {
+    background-color: #f1a96a;
+}
+
+.delete {
+    background-color: #B03030;
+}
+
+/* result */
+.result-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.fipe-information {
+    width: 60%;
+    margin-top: 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.result-title {
+    font-size: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: #1f1f1f;
+    font-weight: 700;
+}
+
+.result-subtitle {
+    font-size: 20px;
+    color: #4a4a4a;
+    font-weight: 600;
+}
+
+.code-fipe {
+    font-size: 16px;
+}
+
+.code-fipe span {
+    color: #4a4a4a;
+    font-weight: 600;
+}
+
+.fipe-price-container {
+    margin-top: 4rem;
+    background-color: #FFF;
+    max-width: 400px;
+    padding: 2rem;
+    border-radius: 8px;
+}
+
+.fipe-price-container img {
+    height: 30px;
+}
+
+.flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.flex .fa-regular, 
+.flex .fa-solid {
+    cursor: pointer;
+}
+
+.flex .fa-solid {
+    color: rgb(197, 29, 29);
+}
+
+.fipe-price {
+    color: #ec7000;
+    font-weight: 700;
+    font-size: 32px;
+    margin-top: .5rem;
+}
+
+.reference-month {
+    font-size: 12px;
+    color: #7a7a7a;
+    margin-top: .5rem;
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="index">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,7 @@
     <script src="js/script.js" defer></script>
 </head>
 <body>
+    
     <header>
         <nav class="navbar">
             <a href="index.html">
@@ -32,17 +33,11 @@
     <main class="main">
         <section id="search-fipe">
             <div id="search-box">
-                <form>
-                    <!-- <fieldset id="vehicle-type">
-                        <input type="radio" id="cars" name="vehicleType" value="cars" checked>
-                        <label for="cars">Carros</label>
-
-                        <input type="radio" id="motorcycles" name="vehicleType" value="motorcycles">
-                        <label for="motorcycles">Motos</label>
-                    </fieldset> -->
+                <form id="search-fipe-form">
                     <select name="vehicle-type" id="vehicle-type">
                         <option value="cars" selected>Carros</option>
                         <option value="motorcycles">Motos</option>
+                        <option value="trucks">Caminhões</option>
                     </select>
 
                     <div class="vehicle-info">
@@ -58,23 +53,11 @@
                             <option value="" disabled selected>Escolha o ano</option>
                         </select> 
                         
-                        <button type="submit" class="submit" disabled>Buscar</button>
+                        <button type="submit" class="search-fipe-button" disabled>Buscar</button>
                     </div>
                 </form>
             </div>
         </section>
-
-        <!-- <section id="favorites">
-            <h2>Consultas rápidas</h2>
-            <div id="favorites-container">
-
-                <div class="favorite-box">
-                    <div class="title-box">
-                        <h3 class="title-car">Honda civic</h3>
-                    </div>
-                </div>
-            </div>
-        </section> -->
     </main>
 </body>
 </html>
