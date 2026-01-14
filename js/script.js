@@ -555,11 +555,13 @@ document.addEventListener("DOMContentLoaded", () => {
   passwordInput.addEventListener("keydown", (e) => {
     if(e.key !== "Enter") return
 
-    if(currentPage === login) {
+    if(currentPage === "login") {
       login()
     }
-
-    register()
+    else {
+      register()
+    }
+    
   })
 })
 
