@@ -592,7 +592,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return await result.json();
   }
 
-
   async function appendConsultations() {
     queryContainer.innerHTML = ""
     pages.innerHTML = ""
@@ -616,11 +615,47 @@ document.addEventListener("DOMContentLoaded", async () => {
       queryContainer.appendChild(template.content);
     }
 
-    if(page >= 0 && page < totalPages) {
+    if(page === 0 && totalPages === 0) {
+      const template = document.createElement("template")
+      template.innerHTML = `
+        <div class="current">Página ${page + 1}</div>
+        `
+      pages.appendChild(template.content)
+    }
+
+    if(page === 0 && totalPages > 0) {
+      const template = document.createElement("template")
+      template.innerHTML = `
+        <div class="current">Página ${page + 1}</div>
+        <div class="next">Próxima <i class="fa-solid fa-arrow-right"></i></div>
+        `
+      pages.appendChild(template.content)
+
+      pages.querySelector(".next").addEventListener("click",  () => {
+        page ++;
+        appendConsultations();
+      })
+    }
+
+    if(page > 0 && totalPages === page) {
       const template = document.createElement("template")
       template.innerHTML = `
         <div class="previous"><i class="fa-solid fa-arrow-left"></i> Anterior</div>
-        <div class="current">Página ${page + 2}</div>
+        <div class="current">Página ${page + 1}</div>
+        `
+      pages.appendChild(template.content)
+
+      pages.querySelector(".previous").addEventListener("click",  () => {
+        page --;
+        appendConsultations();
+      })
+    }
+
+    if(page > 0 && totalPages !== page) {
+      const template = document.createElement("template")
+      template.innerHTML = `
+        <div class="previous"><i class="fa-solid fa-arrow-left"></i> Anterior</div>
+        <div class="current">Página ${page + 1}</div>
         <div class="next">Próxima <i class="fa-solid fa-arrow-right"></i></div>
         `
       pages.appendChild(template.content)
@@ -630,33 +665,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         appendConsultations();
       })
 
-      pages.querySelector(".next").addEventListener("click",  () => {
-        page ++;
-        appendConsultations();
-      })
-
-      return
-    }
-
-    if(page === totalPages && page !== 0) {
-      const template = document.createElement("template");
-      template.innerHTML = `<div class="previous"><i class="fa-solid fa-arrow-left"></i>Anterior</div>
-                            <div class="current">Página ${page + 2}</div>`
-      pages.appendChild(template.content)
-      
-      pages.querySelector(".previous").addEventListener("click",  () => {
-          page --;
-          appendConsultations();
-        })
-
-      return
-    }
-
-    if(page < totalPages) {
-      const template = document.createElement("template");
-      template.innerHTML = `<div class="next">Próxima <i class="fa-solid fa-arrow-right"></i></div>`
-      pages.appendChild(template.content)
-    
       pages.querySelector(".next").addEventListener("click",  () => {
         page ++;
         appendConsultations();
