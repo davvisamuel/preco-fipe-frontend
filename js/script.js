@@ -687,7 +687,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
   }
 
+  async function deleteConsultationsAndRefresh() {
+    await deleteConsultations()
+
+    window.location.reload()
+  }
+
   appendConsultations()
-  deleteButton.addEventListener("click", deleteConsultations)
+  deleteButton.addEventListener("click", deleteConsultationsAndRefresh)
 })
 
