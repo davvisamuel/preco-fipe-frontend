@@ -476,20 +476,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   //login.html
 document.addEventListener("DOMContentLoaded", () => {
-const loginPage = document.querySelector("#login");
+  const loginPage = document.querySelector("#login");
   if(!loginPage) return
+
   const loginExtra = document.querySelector(".login-extra")
   const btnPrimaryLogin = document.querySelector(".btn-primary");
   const btnSecondaryLogin = document.querySelector(".btn-secondary");
   const emailInput = document.querySelector("#email");
   const passwordInput = document.querySelector("#password");
 
-  async function login(e) {
-      e.preventDefault()
+  let currentPage = "login"
+
+  async function login() {
+      const email = emailInput.value
+      const password = passwordInput.value
+
+      if(email === null || password === null) return
   
       const payload = {
-          email: emailInput.value,
-          password: passwordInput.value
+          email: email,
+          password: password
       };
     
       const response = await fetch("http://localhost:8080/v1/auth/login", {
@@ -497,20 +503,18 @@ const loginPage = document.querySelector("#login");
           headers: {
           "Content-Type": "application/json"
           },
-        
           body: JSON.stringify(payload)
       })
+      
+      if(response.status === 404 || response.status === 400) return
+
+      const body = await response.json()
     
-      const token = await response.json()
-      if(token) {
-        document.cookie = `token=${token.token}`
-        window.location.replace("/precoFipe/index.html")
-      }  
+      document.cookie = `token=${body.token}`
+      window.location.replace("/precoFipe/index.html")
   }
 
-  async function register(e) {
-    e.preventDefault()
-
+  async function register() {
     const payload = {
       email: emailInput.value,
       password: passwordInput.value
@@ -523,9 +527,16 @@ const loginPage = document.querySelector("#login");
       },
       body: JSON.stringify(payload)
     })
+
+    if(response.status === 400) {
+      console.log("ERRO")
+    }
+    
+    window.location.reload()
   }
 
   function registerForm() {
+    currentPage = "register"
     btnPrimaryLogin.removeEventListener("click", login)
     btnSecondaryLogin.remove()
 
@@ -540,6 +551,16 @@ const loginPage = document.querySelector("#login");
 
   btnPrimaryLogin.addEventListener("click", login)
   btnSecondaryLogin.addEventListener("click", registerForm)
+
+  passwordInput.addEventListener("keydown", (e) => {
+    if(e.key !== "Enter") return
+
+    if(currentPage === login) {
+      login()
+    }
+
+    register()
+  })
 })
 
 //recentes.html
