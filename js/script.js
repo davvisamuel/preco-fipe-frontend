@@ -67,11 +67,160 @@ function modal() {
   })
 
   emailChange.addEventListener("click", () => {
-    
+    const userContainer = document.querySelector(".user-container");
+    const template = document.createElement("template");
+
+    template.innerHTML = `
+      <div class="modal-secondary">
+                    <section id="security-confirmation">
+                      <h2>Atualize seu email</h2>
+                    
+                      <form class="email-form">
+                        <div class="email-form-fields">
+                        
+                          <div class="form-group">
+                            <label for="new-email">
+                              Novo email <span class="required">*</span>
+                            </label>
+                            <input type="email" id="new-email">
+                          </div>
+                      
+                          <div class="form-group">
+                            <label for="confirm-email">
+                              Confirmar novo email <span class="required">*</span>
+                            </label>
+                            <input type="email" id="confirm-email">
+                          </div>
+
+                          <div class="form-group">
+                            <label for="current-password">
+                              Senha atual <span class="required">*</span>
+                            </label>
+                            <input type="password" id="current-password">
+                          </div>
+                      
+                          <div class="form-actions">
+                            <button type="button" class="btn-cancel">Cancelar</button>
+                            <button type="button" class="btn-ready">Pronto</button>
+                          </div>
+                      
+                        </div>
+                      </form>
+                    </section>
+                </div>
+    `
+
+    const clone = template.content.cloneNode(true);
+    const modalSecondary = clone.querySelector(".modal-secondary")  
+
+    clone.querySelector(".btn-cancel").addEventListener("click", () => {
+      userContainer.removeChild(modalSecondary)
+    })
+
+    clone.querySelector(".btn-ready").addEventListener("click", async () => {
+
+      const newEmail = document.querySelector("#new-email").value
+      const confirmEmail = document.querySelector("#confirm-email").value
+      const currentPassword = document.querySelector("#current-password").value
+
+      if(newEmail !== confirmEmail) return
+      
+      const token = getCookie("token=")
+
+      const payload = {
+        email: newEmail,
+        password: currentPassword
+      }
+      
+      const response = await fetch(baseUrl() + "/v1/user", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if(response.status == 204) {
+         userContainer.removeChild(modalSecondary)
+      }
+    })
+
+    userContainer.appendChild(modalSecondary)
   })
 
   passwordChange.addEventListener("click", () => {
-    
+    const userContainer = document.querySelector(".user-container");
+    const template = document.createElement("template");
+
+    template.innerHTML = `
+      <div class="modal-secondary">
+                    <section id="security-confirmation">
+                      <h2>Atualize sua senha</h2>
+                    
+                      <form class="password-form">
+                        <div class="password-form-fields">
+                        
+                          <div class="form-group">
+                            <label for="new-password">
+                              Nova senha <span class="required">*</span>
+                            </label>
+                            <input type="password" id="new-password">
+                          </div>
+                      
+                          <div class="form-group">
+                            <label for="confirm-password">
+                              Confirmar nova senha <span class="required">*</span>
+                            </label>
+                            <input type="password" id="confirm-password">
+                          </div>
+                      
+                          <div class="form-actions">
+                            <button type="button" class="btn-cancel">Cancelar</button>
+                            <button type="button" class="btn-ready">Pronto</button>
+                          </div>
+                      
+                        </div>
+                      </form>
+                    </section>
+                </div>
+    `
+
+    const clone = template.content.cloneNode(true);
+    const modalSecondary = clone.querySelector(".modal-secondary")  
+
+    clone.querySelector(".btn-cancel").addEventListener("click", () => {
+      userContainer.removeChild(modalSecondary)
+    })
+
+    clone.querySelector(".btn-ready").addEventListener("click", async () => {
+
+      const newPassword = document.querySelector("#new-password").value
+      const confirmPassword = document.querySelector("#confirm-password").value
+
+      if(newPassword !== confirmPassword) return
+      
+      const token = getCookie("token=")
+
+      const payload = {
+        password: newPassword
+      }
+      
+      const response = await fetch(baseUrl() + "/v1/user", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if(response.status == 204) {
+         userContainer.removeChild(modalSecondary)
+      }
+    })
+
+    userContainer.appendChild(modalSecondary)
   })
 
   exit.addEventListener("click", () => {
@@ -79,8 +228,21 @@ function modal() {
     window.location.reload()
   })
 
-  deleteAccount.addEventListener("click", () => {
-    
+  deleteAccount.addEventListener("click", async () => {
+    const token = getCookie("token=")
+
+    const response = await fetch(baseUrl() + "/v1/user", {
+      method: "DELETE",
+      headers: {
+        Content: "application/json",
+        Authorization: token 
+      }
+    })
+
+    if(response.status === 204) {
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;"
+      window.location.reload()
+    }
   })
 }
 
