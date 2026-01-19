@@ -128,11 +128,11 @@ function modal() {
       const token = getCookie("token=")
 
       const payload = {
-        email: newEmail,
-        password: currentPassword
+        newEmail: newEmail,
+        currentPassword: currentPassword
       }
       
-      const response = await fetch(baseUrl() + "/v1/user", {
+      const response = await fetch(baseUrl() + "/v1/user/email", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -160,7 +160,14 @@ function modal() {
                     
                       <form class="password-form">
                         <div class="password-form-fields">
-                        
+
+                          <div class="form-group">
+                            <label for="current-password">
+                              Senha atual <span class="required">*</span>
+                            </label>
+                            <input type="password" id="current-password">
+                          </div>
+
                           <div class="form-group">
                             <label for="new-password">
                               Nova senha <span class="required">*</span>
@@ -197,16 +204,18 @@ function modal() {
 
       const newPassword = document.querySelector("#new-password").value
       const confirmPassword = document.querySelector("#confirm-password").value
+      const currentPassword = document.querySelector("#current-password").value
 
       if(newPassword !== confirmPassword) return
       
       const token = getCookie("token=")
 
       const payload = {
-        password: newPassword
+        currentPassword: currentPassword,
+        newPassword: newPassword
       }
       
-      const response = await fetch(baseUrl() + "/v1/user", {
+      const response = await fetch(baseUrl() + "/v1/user/password", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
