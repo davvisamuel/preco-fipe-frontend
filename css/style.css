@@ -19,6 +19,15 @@ h2, h3 {
     color: #333;
 }
 
+.error {
+    border: 1px solid #F02849;
+}
+
+.error-message {
+    color: red;
+    font-size: 15px;
+}
+
 body {
     background-color: #f2f2f2;
     font-family: "Jost", sans-serif;
@@ -194,8 +203,6 @@ header {
     font-weight: normal;
 }
 
-
-
 /* login.html */
 .banner-section {
     height: 150px;
@@ -225,6 +232,10 @@ header {
     height: 50px;
     border: 1px solid #dbdbdb;
     border-radius: 5px;
+}
+
+.form-input.error {
+    border: 1px solid #F02849;
 }
 
 .btn-primary {
@@ -269,8 +280,6 @@ header {
 .btn-secondary:hover {
     background-color: #f18c33;
 }
-
-
 
 /* recentes.html */
 .container {
@@ -468,12 +477,16 @@ header {
     flex-direction: column;
 }
 
-input[type="password"],
-input[type="email"] {
+.modal-input {
     height: 50px;
     border-radius: 8px;
     border: none;
     border: 1px solid #333;
+    padding: 20px;
+}
+
+.modal-input.error {
+    border: 1px solid #F02849;
 }
 
 .form-actions {

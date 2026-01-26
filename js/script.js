@@ -82,21 +82,21 @@ function modal() {
                             <label for="new-email">
                               Novo email <span class="required">*</span>
                             </label>
-                            <input type="email" id="new-email">
+                            <input type="email" id="new-email" class="modal-input">
                           </div>
                       
                           <div class="form-group">
                             <label for="confirm-email">
                               Confirmar novo email <span class="required">*</span>
                             </label>
-                            <input type="email" id="confirm-email">
+                            <input type="email" id="confirm-email" class="modal-input">
                           </div>
 
                           <div class="form-group">
                             <label for="current-password">
                               Senha atual <span class="required">*</span>
                             </label>
-                            <input type="password" id="current-password">
+                            <input type="password" id="current-password" class="modal-input">
                           </div>
                       
                           <div class="form-actions">
@@ -117,21 +117,39 @@ function modal() {
       userContainer.removeChild(modalSecondary)
     })
 
-    clone.querySelector(".btn-ready").addEventListener("click", async () => {
+    clone.querySelector(".btn-ready").addEventListener("click", putEmail)
 
-      const newEmail = document.querySelector("#new-email").value
-      const confirmEmail = document.querySelector("#confirm-email").value
-      const currentPassword = document.querySelector("#current-password").value
+    clone.querySelector("#current-password").addEventListener("keydown", putEmail)
 
-      if(newEmail !== confirmEmail) return
+    async function putEmail(e) {
+
+      if(e.type === "keydown") {
+        if(e.key !== "Enter") return
+      }
+
+      const newEmail = document.querySelector("#new-email")
+      const confirmEmail = document.querySelector("#confirm-email")
+      const currentPassword = document.querySelector("#current-password")
+
+      modalSecondary.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
+      modalSecondary.querySelectorAll(".error-message").forEach(e => e.remove())
+      const p = document.createElement("p")
+      p.className = "error-message"
+
+      if(newEmail.value !== confirmEmail.value) {
+        confirmEmail.classList.add("error")
+        p.textContent = "Os emails não coincidem"
+        confirmEmail.after(p)
+        return
+      }
       
       const token = getCookie("token=")
 
       const payload = {
-        newEmail: newEmail,
-        currentPassword: currentPassword
+        newEmail: newEmail.value,
+        currentPassword: currentPassword.value
       }
-      
+    
       const response = await fetch(baseUrl() + "/v1/user/email", {
         method: "PUT",
         headers: {
@@ -141,10 +159,27 @@ function modal() {
         body: JSON.stringify(payload)
       })
       
-      if(response.status == 204) {
-         userContainer.removeChild(modalSecondary)
+      switch(response.status) {
+        case 204: 
+        userContainer.removeChild(modalSecondary) 
+        break
+        case 409:
+          newEmail.classList.add("error")
+          p.textContent = "Este email já esta sendo usado"
+          newEmail.after(p)
+          break
+        case 403: 
+          currentPassword.classList.add("error")
+          p.textContent = "Senha incorreta"
+          currentPassword.after(p)
+          break
+        case 400:
+          newEmail.classList.add("error")
+          p.textContent = "Insira um email válido"
+          newEmail.after(p)
+          break
       }
-    })
+    }
 
     userContainer.appendChild(modalSecondary)
   })
@@ -165,21 +200,21 @@ function modal() {
                             <label for="current-password">
                               Senha atual <span class="required">*</span>
                             </label>
-                            <input type="password" id="current-password">
+                            <input type="password" id="current-password" class="modal-input"> 
                           </div>
 
                           <div class="form-group">
                             <label for="new-password">
                               Nova senha <span class="required">*</span>
                             </label>
-                            <input type="password" id="new-password">
+                            <input type="password" id="new-password" class="modal-input">
                           </div>
                       
                           <div class="form-group">
                             <label for="confirm-password">
                               Confirmar nova senha <span class="required">*</span>
                             </label>
-                            <input type="password" id="confirm-password">
+                            <input type="password" id="confirm-password" class="modal-input">
                           </div>
                       
                           <div class="form-actions">
@@ -202,17 +237,27 @@ function modal() {
 
     clone.querySelector(".btn-ready").addEventListener("click", async () => {
 
-      const newPassword = document.querySelector("#new-password").value
-      const confirmPassword = document.querySelector("#confirm-password").value
-      const currentPassword = document.querySelector("#current-password").value
+      const newPassword = document.querySelector("#new-password")
+      const confirmPassword = document.querySelector("#confirm-password")
+      const currentPassword = document.querySelector("#current-password")
 
-      if(newPassword !== confirmPassword) return
+      modalSecondary.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
+      modalSecondary.querySelectorAll(".error-message").forEach(e => e.remove())
+      const p = document.createElement("p")
+      p.className = "error-message"
+
+      if(newPassword.value !== confirmPassword.value) {
+        confirmPassword.classList.add("error")
+        p.textContent= "As senhas não coincidem"
+        confirmPassword.after(p)
+        return
+      }
       
       const token = getCookie("token=")
 
       const payload = {
-        currentPassword: currentPassword,
-        newPassword: newPassword
+        currentPassword: currentPassword.value,
+        newPassword: newPassword.value
       }
       
       const response = await fetch(baseUrl() + "/v1/user/password", {
@@ -224,8 +269,22 @@ function modal() {
         body: JSON.stringify(payload)
       })
 
-      if(response.status == 204) {
-         userContainer.removeChild(modalSecondary)
+      switch(response.status) {
+        case 204:
+          userContainer.removeChild(modalSecondary)
+          break
+
+        case 403:
+          currentPassword.classList.add("error")
+          p.textContent = "Senha incorreta"
+          currentPassword.after(p)
+          break
+
+        case 400:
+          newPassword.classList.add("error")
+          p.textContent = "Insira uma senha válida"
+          newPassword.after(p)
+          break
       }
     })
 
@@ -487,17 +546,18 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `
 
-      const vehicle = {
-        "codeFipe": favorite.vehicleData.codeFipe,
-        "modelYear": favorite.vehicleData.modelYear,
-        "vehicleType": favorite.vehicleData.vehicleType
-      }
-
       const clone = template.content.cloneNode(true)
       const favoriteBox = clone.querySelector(".favorite-box");
 
-      favoriteBox.addEventListener("click", async () => {
+      const query = {
+        vehicleType: null,
+        brand: null,
+        model: null,
+        modelYear: favorite.vehicleData.modelYear
+      }
 
+      favoriteBox.addEventListener("click", async () => {
+        localStorage.setItem("query", JSON.stringify(query))
         const fipeInformation = await getFipeInformationByCodeFipeAndYear(favorite.vehicleData.vehicleType, favorite.vehicleData.codeFipe, favorite.vehicleData.modelYear)
 
         localStorage.setItem(
@@ -651,6 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if(!loginPage) return
 
   const loginExtra = document.querySelector(".login-extra")
+  const loginForm = document.querySelector(".login-form")
   const btnPrimaryLogin = document.querySelector(".btn-primary");
   const btnSecondaryLogin = document.querySelector(".btn-secondary");
   const emailInput = document.querySelector("#email");
@@ -662,7 +723,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = emailInput.value
       const password = passwordInput.value
 
-      if(email === null || password === null) return
+      if(!email || !password) return
   
       const payload = {
           email: email,
@@ -676,8 +737,29 @@ document.addEventListener("DOMContentLoaded", () => {
           },
           body: JSON.stringify(payload)
       })
+
+      loginForm.querySelectorAll(".error")
+      .forEach((e) => e.classList.remove("error"))
+
+      loginForm.querySelectorAll("p.error-message")
+      .forEach((e) => e.remove())
       
-      if(response.status === 404 || response.status === 400) return
+      let p = document.createElement("p")
+      p.className = "error-message"
+
+      switch(response.status) {
+        case 404:
+          emailInput.classList.add("error")
+          p.textContent = "O email que você inseriu não está conectado a uma conta."
+          emailInput.after(p)
+          return
+
+        case 403:
+          passwordInput.classList.add("error")
+          p.textContent = "A senha que você inseriu está incorreta."
+          passwordInput.after(p)
+          return
+      }
 
       const body = await response.json()
     
@@ -691,6 +773,9 @@ document.addEventListener("DOMContentLoaded", () => {
       password: passwordInput.value
     }
 
+    const p = document.createElement("p")
+    p.classList.add("error-message")
+
     const response = await fetch(baseUrl() + "/v1/user/register", {
       method: "POST",
       headers: {
@@ -699,14 +784,33 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify(payload)
     })
 
-    if(response.status === 400) {
-      console.log("ERRO")
-    }
-    
-    window.location.reload()
+    loginForm.querySelectorAll(".error").forEach(e => e.classList.remove("error"))
+    loginForm.querySelectorAll("p.error-message").forEach(p => p.remove())
+
+    switch(response.status) {
+      case 201: 
+      window.location.reload()
+
+      case 409:
+        emailInput.classList.add("error")
+        p.innerText = "O email que você inseriu já está sendo usado ou é inválido."
+        emailInput.after(p)
+        break
+
+      case 400:
+        emailInput.classList.add("error")
+        emailInput.after(p)
+        password.classList.add("error")
+        p.textContent = "Email ou senha inválidos"
+        password.after(p)
+        break
+    } 
   }
 
   function registerForm() {
+    document.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
+    document.querySelectorAll(".error-message").forEach(e => e.remove())
+
     currentPage = "register"
     btnPrimaryLogin.removeEventListener("click", login)
     btnSecondaryLogin.remove()
