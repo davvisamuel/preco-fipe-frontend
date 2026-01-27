@@ -16,10 +16,13 @@ function initUser() {
 
   navbarAuth.innerHTML = `<i class="fa-solid fa-user-pen"></i> Minha conta`
   navbarAuth.removeAttribute("href")
-  navbarAuth.addEventListener("click", modal)
+  navbarAuth.addEventListener("click", () => {
+    createMainModal()
+    bindMainModalEvents()})
 }
 
-function modal() {
+
+function createMainModal() {
   if (document.querySelector(".modal-container")) return;
 
   const template = document.createElement("template")
@@ -47,26 +50,54 @@ function modal() {
             </div>
         </div>`
 
-  document.body.appendChild(template.content)
-
-  const modal = document.querySelector(".modal-container");
-  const closeBtn = document.querySelector(".close-modal");
-  const emailChange = document.querySelector(".email-change");
-  const passwordChange = document.querySelector(".password-change");
-  const exit = document.querySelector(".exit");
-  const deleteAccount = document.querySelector(".delete-account");
-
-  closeBtn.addEventListener("click", () => {
-    modal.remove();
+  const clone = template.content.cloneNode(true)
+  
+  const modalConteiner = clone.querySelector(".modal-container")
+  
+  clone.querySelector(".close-modal").addEventListener("click", () => {
+    modalConteiner.remove();
   })
 
-  modal.addEventListener("click", (e) => {
-    if(e.target === modal) {
-      modal.remove()
+  modalConteiner.addEventListener("click", (e) => {
+    if(e.target === modalConteiner) {
+      modalConteiner.remove()
     }
   })
 
-  emailChange.addEventListener("click", () => {
+  clone.querySelector(".close-modal").addEventListener("click", () => {
+    modalConteiner.remove();
+  })
+
+  document.body.appendChild(clone)
+}
+function bindMainModalEvents() {
+  document.querySelector(".email-change").addEventListener("click", initEmailChangeSubModal)
+  document.querySelector(".password-change").addEventListener("click", initPasswordChangeSubModal)
+
+  document.querySelector(".exit").addEventListener("click", () => {
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;";
+    window.location.reload()
+  })
+  document.querySelector(".delete-account").addEventListener("click", async () => {
+    const token = getCookie("token=")
+
+    const response = await fetch(baseUrl() + "/v1/user", {
+      method: "DELETE",
+      headers: {
+        Content: "application/json",
+        Authorization: token 
+      }
+    })
+
+    if(response.status === 204) {
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;"
+      window.location.reload()
+    }
+  })
+}
+
+
+function initEmailChangeSubModal() {
     const userContainer = document.querySelector(".user-container");
     const template = document.createElement("template");
 
@@ -109,82 +140,24 @@ function modal() {
                     </section>
                 </div>
     `
+    const clone = template.content.cloneNode(true)
 
-    const clone = template.content.cloneNode(true);
     const modalSecondary = clone.querySelector(".modal-secondary")  
 
     clone.querySelector(".btn-cancel").addEventListener("click", () => {
       userContainer.removeChild(modalSecondary)
     })
 
-    clone.querySelector(".btn-ready").addEventListener("click", putEmail)
+    clone.querySelector(".btn-ready").addEventListener("click", handleEmailChangeSubmit)
 
-    clone.querySelector("#current-password").addEventListener("keydown", putEmail)
-
-    async function putEmail(e) {
-
-      if(e.type === "keydown") {
-        if(e.key !== "Enter") return
-      }
-
-      const newEmail = document.querySelector("#new-email")
-      const confirmEmail = document.querySelector("#confirm-email")
-      const currentPassword = document.querySelector("#current-password")
-
-      modalSecondary.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
-      modalSecondary.querySelectorAll(".error-message").forEach(e => e.remove())
-      const p = document.createElement("p")
-      p.className = "error-message"
-
-      if(newEmail.value !== confirmEmail.value) {
-        confirmEmail.classList.add("error")
-        p.textContent = "Os emails não coincidem"
-        confirmEmail.after(p)
-        return
-      }
-      
-      const token = getCookie("token=")
-
-      const payload = {
-        newEmail: newEmail.value,
-        currentPassword: currentPassword.value
-      }
-    
-      const response = await fetch(baseUrl() + "/v1/user/email", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token
-        },
-        body: JSON.stringify(payload)
-      })
-      
-      switch(response.status) {
-        case 204: 
-        userContainer.removeChild(modalSecondary) 
-        break
-        case 409:
-          newEmail.classList.add("error")
-          p.textContent = "Este email já esta sendo usado"
-          newEmail.after(p)
-          break
-        case 403: 
-          currentPassword.classList.add("error")
-          p.textContent = "Senha incorreta"
-          currentPassword.after(p)
-          break
-        case 400:
-          newEmail.classList.add("error")
-          p.textContent = "Insira um email válido"
-          newEmail.after(p)
-          break
-      }
-    }
+    clone.querySelector("#current-password").addEventListener("keydown", (e) => {
+      if(e.key !== "Enter") return
+      handleEmailChangeSubmit()
+    })
 
     userContainer.appendChild(modalSecondary)
-  })
-
-  passwordChange.addEventListener("click", () => {
+}
+function initPasswordChangeSubModal() {
     const userContainer = document.querySelector(".user-container");
     const template = document.createElement("template");
 
@@ -227,7 +200,6 @@ function modal() {
                     </section>
                 </div>
     `
-
     const clone = template.content.cloneNode(true);
     const modalSecondary = clone.querySelector(".modal-secondary")  
 
@@ -235,84 +207,131 @@ function modal() {
       userContainer.removeChild(modalSecondary)
     })
 
-    clone.querySelector(".btn-ready").addEventListener("click", async () => {
+    clone.querySelector(".btn-ready").addEventListener("click", handlePasswordChangeSubmit)
 
-      const newPassword = document.querySelector("#new-password")
-      const confirmPassword = document.querySelector("#confirm-password")
-      const currentPassword = document.querySelector("#current-password")
-
-      modalSecondary.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
-      modalSecondary.querySelectorAll(".error-message").forEach(e => e.remove())
-      const p = document.createElement("p")
-      p.className = "error-message"
-
-      if(newPassword.value !== confirmPassword.value) {
-        confirmPassword.classList.add("error")
-        p.textContent= "As senhas não coincidem"
-        confirmPassword.after(p)
-        return
-      }
-      
-      const token = getCookie("token=")
-
-      const payload = {
-        currentPassword: currentPassword.value,
-        newPassword: newPassword.value
-      }
-      
-      const response = await fetch(baseUrl() + "/v1/user/password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token
-        },
-        body: JSON.stringify(payload)
-      })
-
-      switch(response.status) {
-        case 204:
-          userContainer.removeChild(modalSecondary)
-          break
-
-        case 403:
-          currentPassword.classList.add("error")
-          p.textContent = "Senha incorreta"
-          currentPassword.after(p)
-          break
-
-        case 400:
-          newPassword.classList.add("error")
-          p.textContent = "Insira uma senha válida"
-          newPassword.after(p)
-          break
-      }
+    clone.querySelector("#confirm-password").addEventListener("keydown", (e) => {
+      if(e.key !== "Enter") return
+      handlePasswordChangeSubmit()
     })
 
     userContainer.appendChild(modalSecondary)
-  })
+}
 
-  exit.addEventListener("click", () => {
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;";
-    window.location.reload()
-  })
 
-  deleteAccount.addEventListener("click", async () => {
-    const token = getCookie("token=")
+function handleEmailChangeSubmit() {
+  const newEmail = document.querySelector("#new-email")
+  const confirmEmail = document.querySelector("#confirm-email")
+  const currentPassword = document.querySelector("#current-password")
 
-    const response = await fetch(baseUrl() + "/v1/user", {
-      method: "DELETE",
-      headers: {
-        Content: "application/json",
-        Authorization: token 
-      }
-    })
+  if(newEmail.value !== confirmEmail.value) {
+    confirmEmail.classList.add("error")
+    p.textContent = "Os emails não coincidem"
+    confirmEmail.after(p)
+    return
+  }
 
-    if(response.status === 204) {
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;"
-      window.location.reload()
-    }
+  modalSecondary.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
+  modalSecondary.querySelectorAll(".error-message").forEach(e => e.remove())
+  const p = document.createElement("p")
+  p.className = "error-message"
+
+  updateEmail(newEmail.value, currentPassword.value)
+
+  switch(response.status) {
+    case 204: 
+    userContainer.removeChild(modalSecondary) 
+    break
+    case 409:
+      newEmail.classList.add("error")
+      p.textContent = "Este email já esta sendo usado"
+      newEmail.after(p)
+      break
+    case 403: 
+      currentPassword.classList.add("error")
+      p.textContent = "Senha incorreta"
+      currentPassword.after(p)
+      break
+    case 400:
+      newEmail.classList.add("error")
+      p.textContent = "Insira um email válido"
+      newEmail.after(p)
+      break
+  }
+}
+async function handlePasswordChangeSubmit() {
+  const newPassword = document.querySelector("#new-password")
+  const confirmPassword = document.querySelector("#confirm-password")
+  const currentPassword = document.querySelector("#current-password")
+
+  document.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
+  document.querySelectorAll(".error-message").forEach(e => e.remove())
+  const p = document.createElement("p")
+  p.className = "error-message"
+
+  if(newPassword.value !== confirmPassword.value) {
+    confirmPassword.classList.add("error")
+    p.textContent= "As senhas não coincidem"
+    confirmPassword.after(p)
+    return
+  }
+  
+  const response = await updatePassword(currentPassword.value, newPassword.value)
+
+  switch(response.status) {
+    case 204:
+      userContainer.removeChild(modalSecondary)
+      break
+
+    case 403:
+      currentPassword.classList.add("error")
+      p.textContent = "Senha incorreta"
+      currentPassword.after(p)
+      break
+
+    case 400:
+      newPassword.classList.add("error")
+      p.textContent = "Insira uma senha válida"
+      newPassword.after(p)
+      break
+  }
+}
+
+
+async function updateEmail(newEmail, currentPassword) {
+  const token = getCookie("token=")
+
+  const payload = {
+    newEmail: newEmail,
+    currentPassword: currentPassword
+  }
+
+  return await fetch(baseUrl() + "/v1/user/email", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": token
+    },
+    body: JSON.stringify(payload)
   })
 }
+async function updatePassword(currentPassword, newPassword) {
+  const token = getCookie("token=")
+
+  const payload = {
+    currentPassword: currentPassword,
+    newPassword: newPassword
+  }
+  
+  return await fetch(baseUrl() + "/v1/user/password", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": token
+    },
+    body: JSON.stringify(payload)
+  })
+}
+
 
 function baseUrl() {
   return `http://localhost:8080`
