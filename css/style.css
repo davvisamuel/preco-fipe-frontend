@@ -124,14 +124,14 @@ header {
 }
 
 /* Favorites */
-#favorites {
+.favorites {
     margin-top: 6rem;
     width: 50%;
     align-self: center;
     text-align: center;
 }
 
-#favorites h2 {
+.favorites h2 {
     margin-bottom: 2rem;
     font-size: 18px;
     color: #333;
@@ -170,7 +170,7 @@ header {
     right: -10px;
 }
 
-#favorite-boxes {
+.favorite-section {
     width: 100%;
     display: flex;
     gap: 2%;

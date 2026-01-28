@@ -341,8 +341,7 @@ initUser();
 
 //index.html
 document.addEventListener("DOMContentLoaded", () => {
-  const indexPage = document.querySelector("#index");
-  if(!indexPage) return
+  if(!document.querySelector("#index")) return;
 
   const vehicleTypeSelect = document.querySelector("#vehicle-type")
   const brandSelect = document.querySelector("#brand");
@@ -352,71 +351,91 @@ document.addEventListener("DOMContentLoaded", () => {
   const main = document.querySelector("main");
 
   async function getBrands() {
-    const result = await fetch(`${baseUrl()}/v1/api/${vehicleTypeSelect.value}`);
-    return result.json();
+    return await fetch(`${baseUrl()}/v1/api/${vehicleTypeSelect.value}`);
   };
-
   async function appendBrandOptions() {
-    const brands = await getBrands();
+    const response = await getBrands();
 
-    brandSelect.innerHTML = "";
+    switch(response.status) {
+      case 200:
+        const brands = await response.json()
+        brandSelect.innerHTML = "";
 
-    brands.forEach((brand) => {
-      const option = document.createElement("option")
-      option.innerText = brand.name
-      option.value = brand.code
-      brandSelect.appendChild(option);
-    }) 
+        brands.forEach((brand) => {
+        const option = document.createElement("option")
+        option.innerText = brand.name
+        option.value = brand.code
+        brandSelect.appendChild(option);
+        })
 
-    modelSelect.removeAttribute("disabled")
-    modelSelect.addEventListener("focus", appendModelOptions)
+        modelSelect.removeAttribute("disabled")
+        modelSelect.addEventListener("focus", appendModelOptions)      
+      break
+    } 
   };
 
   async function getModels() {
-    const response = await fetch(`${baseUrl()}/v1/api/${vehicleTypeSelect.value}/brands/${brandSelect.value}/models`)
-    return await response.json()
+    return await fetch(`${baseUrl()}/v1/api/${vehicleTypeSelect.value}/brands/${brandSelect.value}/models`)
   }
-
   async function appendModelOptions() {
-    const models = await getModels()
+    const response = await getModels()
 
-    modelSelect.innerHTML = "";
+    switch(response.status) {
+      case 200:
+        const models = await response.json()
+        modelSelect.innerHTML = "";
 
-    models.forEach(model => {
-      const option = document.createElement("option")
-      option.innerText = model.name
-      option.value = model.code
-      modelSelect.appendChild(option)
-    })
+        models.forEach(model => {
+          const option = document.createElement("option")
+          option.innerText = model.name
+          option.value = model.code
+          modelSelect.appendChild(option)
+        })
 
-    yearSelect.removeAttribute("disabled")
-    yearSelect.addEventListener("focus", appendYearOptions)
+        yearSelect.removeAttribute("disabled")
+        yearSelect.addEventListener("focus", appendYearOptions)
+      break
+    }
   }
 
   async function getYears() {
-    const response = await fetch(`${baseUrl()}/v1/api/${vehicleTypeSelect.value}/brands/${brandSelect.value}/models/${modelSelect.value}/years`)
-    return response.json()
+    return await fetch(`${baseUrl()}/v1/api/${vehicleTypeSelect.value}/brands/${brandSelect.value}/models/${modelSelect.value}/years`)
   }
-
   async function appendYearOptions() {
-    const years = await getYears()
+    const response = await getYears()
+    switch(response.status) {
+      case 200:
+        const years = await response.json()
+        yearSelect.innerHTML = "";
 
-    yearSelect.innerHTML = "";
-
-    years.forEach(year => {
-      const option = document.createElement("option")
-      option.innerText = year.name
-      option.value = year.code
-      yearSelect.appendChild(option)
-    })
-
-    searchFipeButton.removeAttribute("disabled")
-    searchFipeButton.addEventListener("click", appendFipeInformation)
+        years.forEach(year => {
+          const option = document.createElement("option")
+          option.innerText = year.name
+          option.value = year.code
+          yearSelect.appendChild(option)
+        })
+      
+        searchFipeButton.removeAttribute("disabled")
+        searchFipeButton.addEventListener("click", appendFipeInformation)
+      break
+        }
   }
 
+  async function getFipeInformation(vehicleType, brand, model, modelYear) {
+    const token = getCookie("token=")
+
+    if(!token) {
+      return await fetch(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`);
+    }
+
+    return await fetch(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`, {
+      headers: {
+        "Authorization": token
+      }
+    });  
+  }
   async function appendFipeInformation(e) {
     e.preventDefault()
-    
     const query = {
       vehicleType: vehicleTypeSelect.value,
       brand: brandSelect.value,
@@ -425,176 +444,149 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     localStorage.setItem("query", JSON.stringify(query))
 
-    const fipeInformation = await getFipeInformation(vehicleTypeSelect.value, brandSelect.value, modelSelect.value, yearSelect.value)
+    const response = await getFipeInformation(vehicleTypeSelect.value, brandSelect.value, modelSelect.value, yearSelect.value)
 
-    localStorage.setItem(
-      "fipeInformation",
-      JSON.stringify(fipeInformation)
-    )
+    switch(response.status) {
+      case 200:
+        const fipeInformation = await response.json()
 
-    window.location.href = "result.html"
-  }
+        localStorage.setItem(
+        "fipeInformation",
+        JSON.stringify(fipeInformation)
+        )
 
-  async function getFipeInformation(vehicleType, brand, model, modelYear) {
-    const token = getCookie("token=")
-
-    if(!token) {
-      const response = await fetch(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`);
-      const data = await response.json()
-      return data
+        window.location.href = "result.html"
     }
-
-    const response = await fetch(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`, {
-      headers: {
-        "Authorization": token
-      }
-    });  
-
-    return await response.json()
   }
 
   async function getFipeInformationByCodeFipeAndYear(vehicleType, codeFipe, modelYear) {
     const token = getCookie("token=")
 
-    if(vehicleType === "Carro") {
-      vehicleType = "cars"
-    }
-    if(vehicleType === "Moto") {
-      vehicleType = "motorcycle"
+    switch(vehicleType) {
+      case "Carro":
+        vehicleType = "cars"
+      break
+
+      case "Moto":
+        vehicleType = "motorcycle"
+      break
+
+      case "Caminhão":
+        vehicleType = "trucks"
+      break
     }
 
-    const response = await fetch(`${baseUrl()}/v1/api/${vehicleType}/${codeFipe}/years/${modelYear}`, {
+    return await fetch(`${baseUrl()}/v1/api/${vehicleType}/${codeFipe}/years/${modelYear}`, {
       headers: {
         "Authorization": token
       }
     });  
-
-    return await response.json()
   }
 
   async function getFavoritesPaginated(page, size) {
     const token = getCookie("token=")
+    if(!token) return
 
-    if(!token) {
-      return
-    }
-
-    const response = await fetch(`${baseUrl()}/v1/favorite/paginated?page=${page}&size=${size}&sort=id,desc`, {
+    return await fetch(`${baseUrl()}/v1/favorite/paginated?page=${page}&size=${size}&sort=id,desc`, {
       headers: {
         "Authorization": token
       }
     })
-    return await response.json()
   }
-
   let page = 0
+  let loading = false
   async function appendFavorites() {
-    if(!getCookie("token=")) return
-    const favorites = (await getFavoritesPaginated(page, 6));
-    console.log(favorites)
-    const pageNumber = favorites.number + 1
+    if(loading || !getCookie("token=")) return
+    loading = true
 
-    if(!favorites.content || favorites.content.length === 0) {
-      return
-    }
+    const response = await getFavoritesPaginated(page, 6)
 
-    const favoritesSection = document.querySelector("#favorites")
-    if(favoritesSection) {
-      favoritesSection.remove()
-    }
+    switch(response.status) {
+      case 200:
+        const favorites = await response.json()
 
-    let template = document.createElement("template")
-    if(favorites.totalPages === 1) {
-       template.innerHTML = `
-        <section id="favorites">
-            <h2>Consultas rápidas</h2>
-            <div id="favorites-container">
-              <div id="favorite-boxes"></div>
+        if(!favorites.content) {
+          loading = false
+           return
+        }
+
+        if(document.querySelector(".favorites")) document.querySelector(".favorites").remove()
+
+        let template = document.createElement("template")
+        template.innerHTML = `
+          <section class="favorites">
+              <h2>Consultas rápidas</h2>
+              <div id="favorites-container">
+                <div class="favorite-section"></div>
+              </div>
+          </section>
+          `;
+
+        const clone = template.content.cloneNode(true)
+        const favoriteSection = clone.querySelector(".favorite-section")
+
+        if (page > 0) {
+          const left = document.createElement("i")
+          left.className = "fa-solid fa-circle-chevron-left"
+
+          left.addEventListener("click", () => {page--; appendFavorites(); console.log("Previous")})
+
+          favoriteSection.before(left)
+        }
+
+        if (page + 1 < favorites.totalPages) {
+          const right = document.createElement("i")
+          right.className = "fa-solid fa-circle-chevron-right"
+
+          right.addEventListener("click", () => {page++; appendFavorites(); console.log("Next")})
+
+          favoriteSection.after(right)
+        }
+        
+        main.appendChild(clone)
+
+        for(let i = 0; i < favorites.content.length; i++) {
+          const favorite = favorites.content[i]
+          const template = document.createElement("template")
+        
+          template.innerHTML = `
+            <div class="favorite-box">
+              <div class="title-box">
+                <h3 class="title-car">${favorite.vehicleData.brand} ${favorite.vehicleData.model.substring(0, favorite.vehicleData.model.indexOf(" "))} ${favorite.vehicleData.modelYear}</h3>
+              </div>
             </div>
-        </section>
-        `;
+          `
+  
+          const clone = template.content.cloneNode(true)
+          const favoriteBox = clone.querySelector(".favorite-box");
+        
+          const query = {
+            vehicleType: null,
+            brand: null,
+            model: null,
+            modelYear: favorite.vehicleData.modelYear
+          }
+        
+          favoriteBox.addEventListener("click", async () => {
+            localStorage.setItem("query", JSON.stringify(query))
+            const response = await getFipeInformationByCodeFipeAndYear(favorite.vehicleData.vehicleType, favorite.vehicleData.codeFipe, favorite.vehicleData.modelYear)
+            
+            switch(response.status) {
+              case 200:
+                const fipeInformation = await response.json()
+                localStorage.setItem(
+                "fipeInformation",
+                JSON.stringify(fipeInformation)
+                )
+                window.location.href = "result.html"
+            }
+          })
+        
+          favoriteSection.appendChild(clone)
+        }
+      break
     }
-    if(pageNumber === 1 && favorites.totalPages > 1) {
-      template.innerHTML = `
-        <section id="favorites">
-            <h2>Consultas rápidas</h2>
-            <div id="favorites-container">
-              <div id="favorite-boxes"></div>
-              <i class="fa-solid fa-circle-chevron-right"></i>
-            </div>
-        </section>
-        `;
-    }
-    if(pageNumber > 1 && (pageNumber < favorites.totalPages)) {
-       template.innerHTML = `
-        <section id="favorites">
-            <h2>Consultas rápidas</h2>
-            <div id="favorites-container">
-              <i class="fa-solid fa-circle-chevron-left"></i>
-              <div id="favorite-boxes"></div>
-              <i class="fa-solid fa-circle-chevron-right"></i>
-            </div>
-        </section>
-        `;
-    }
-    if(pageNumber > 1 && pageNumber === favorites.totalPages) {
-       template.innerHTML = `
-        <section id="favorites">
-            <h2>Consultas rápidas</h2>
-            <div id="favorites-container">
-              <i class="fa-solid fa-circle-chevron-left"></i>
-              <div id="favorite-boxes"></div>
-            </div>
-        </section>
-        `;
-    }
-    
-    main.appendChild(template.content)
-
-    const favoriteBoxes = document.querySelector("#favorite-boxes")
-
-    for(i=0; i < favorites.content.length; i++) {
-      const favorite = favorites.content[i]
-      const template = document.createElement("template")
-
-      template.innerHTML = `
-        <div class="favorite-box">
-          <div class="title-box">
-            <h3 class="title-car">${favorite.vehicleData.brand} ${favorite.vehicleData.model.substring(0, favorite.vehicleData.model.indexOf(" "))} ${favorite.vehicleData.modelYear}</h3>
-          </div>
-        </div>
-      `
-
-      const clone = template.content.cloneNode(true)
-      const favoriteBox = clone.querySelector(".favorite-box");
-
-      const query = {
-        vehicleType: null,
-        brand: null,
-        model: null,
-        modelYear: favorite.vehicleData.modelYear
-      }
-
-      favoriteBox.addEventListener("click", async () => {
-        localStorage.setItem("query", JSON.stringify(query))
-        const fipeInformation = await getFipeInformationByCodeFipeAndYear(favorite.vehicleData.vehicleType, favorite.vehicleData.codeFipe, favorite.vehicleData.modelYear)
-
-        localStorage.setItem(
-          "fipeInformation",
-          JSON.stringify(fipeInformation)
-        )
-
-        window.location.href = "result.html"
-      })
-
-      favoriteBoxes.appendChild(clone)
-     }
-
-    const previous = document.querySelector(".fa-circle-chevron-left")
-    if(previous) previous.addEventListener("click", () => {page--; appendFavorites(); console.log("Previous")})
-
-    const next = document.querySelector(".fa-circle-chevron-right")
-    if(next) next.addEventListener("click", () => {page++; appendFavorites(); console.log("Next")})
+    loading = false
   }
 
   function resetForm() {
@@ -603,12 +595,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modelSelect.setAttribute("disabled", "")
     yearSelect.innerHTML = `<option value="" disabled selected>Escolha o ano</option>`
     yearSelect.setAttribute("disabled", "")
-
     modelSelect.removeEventListener("focus", appendModelOptions)
     yearSelect.removeEventListener("focus", appendYearOptions)
     searchFipeButton.removeEventListener("click", getFipeInformation)
   }
-
 
   vehicleTypeSelect.addEventListener("change", resetForm)
   brandSelect.addEventListener("focus", appendBrandOptions)
