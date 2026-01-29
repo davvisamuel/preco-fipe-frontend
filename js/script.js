@@ -738,124 +738,122 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentPage = "login"
 
-  async function login() {
-      const email = emailInput.value
-      const password = passwordInput.value
-
-      if(!email || !password) return
-  
-      const payload = {
+  async function login(email, password) {
+    const payload = {
           email: email,
           password: password
       };
-    
-      const response = await fetch("http://localhost:8080/v1/auth/login", {
+
+    return await fetch(baseUrl() + "/v1/auth/login", {
           method: "POST",
           headers: {
           "Content-Type": "application/json"
           },
           body: JSON.stringify(payload)
       })
-
-      loginForm.querySelectorAll(".error")
-      .forEach((e) => e.classList.remove("error"))
-
-      loginForm.querySelectorAll("p.error-message")
-      .forEach((e) => e.remove())
-      
+  }
+  async function handleLogin() {
+      const response = await login(emailInput.value, passwordInput.value)
       let p = document.createElement("p")
       p.className = "error-message"
 
       switch(response.status) {
+        case 200:
+          const body = await response.json()
+          document.cookie = `token=${body.token}; path=/`
+          window.location.replace("/precoFipe/index.html")
+        break
+
         case 404:
           emailInput.classList.add("error")
           p.textContent = "O email que você inseriu não está conectado a uma conta."
           emailInput.after(p)
-          return
+        return
 
         case 403:
           passwordInput.classList.add("error")
           p.textContent = "A senha que você inseriu está incorreta."
           passwordInput.after(p)
-          return
+        return
       }
-
-      const body = await response.json()
-    
-      document.cookie = `token=${body.token}`
-      window.location.replace("/precoFipe/index.html")
   }
 
-  async function register() {
+  async function register(email, password) {
     const payload = {
-      email: emailInput.value,
-      password: passwordInput.value
+      email: email,
+      password: password
     }
 
-    const p = document.createElement("p")
-    p.classList.add("error-message")
-
-    const response = await fetch(baseUrl() + "/v1/user/register", {
+    return await fetch(baseUrl() + "/v1/user/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
     })
+  }
+  async function handleRegister() {
+    const response = await register(emailInput.value, passwordInput.value)
 
-    loginForm.querySelectorAll(".error").forEach(e => e.classList.remove("error"))
-    loginForm.querySelectorAll("p.error-message").forEach(p => p.remove())
+    const p = document.createElement("p")
+    p.classList.add("error-message")
 
     switch(response.status) {
       case 201: 
-      window.location.reload()
+        window.location.reload()
+      break
 
       case 409:
         emailInput.classList.add("error")
         p.innerText = "O email que você inseriu já está sendo usado ou é inválido."
         emailInput.after(p)
-        break
+      break
 
       case 400:
         emailInput.classList.add("error")
         emailInput.after(p)
-        password.classList.add("error")
+        passwordInput.classList.add("error")
         p.textContent = "Email ou senha inválidos"
-        password.after(p)
-        break
+        passwordInput.after(p)
+      break
     } 
   }
-
   function registerForm() {
-    document.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
-    document.querySelectorAll(".error-message").forEach(e => e.remove())
-
     currentPage = "register"
-    btnPrimaryLogin.removeEventListener("click", login)
+    btnPrimaryLogin.removeEventListener("click", handleLogin)
     btnSecondaryLogin.remove()
 
     const template = document.createElement("template")
     template.innerHTML = `<a href="login.html">Já tem uma conta?</a>`
-    loginExtra.appendChild(template.content)
+    const clone = template.content.cloneNode(true)
+    loginExtra.appendChild(clone)
 
     btnPrimaryLogin.innerText = "Criar conta"
-
-    btnPrimaryLogin.addEventListener("click", register)
+    btnPrimaryLogin.addEventListener("click", () => {
+      clearErrors()
+      handleRegister()
+    })
   }
 
-  btnPrimaryLogin.addEventListener("click", login)
+  function clearErrors() {
+    loginForm.querySelectorAll(".error").forEach(e => e.classList.remove("error"))
+    loginForm.querySelectorAll("p.error-message").forEach(e => e.remove())
+  }
+
+  btnPrimaryLogin.addEventListener("click", () => {
+    clearErrors()
+    handleLogin()
+  })
   btnSecondaryLogin.addEventListener("click", registerForm)
 
   passwordInput.addEventListener("keydown", (e) => {
     if(e.key !== "Enter") return
 
-    if(currentPage === "login") {
-      login()
+    if (currentPage === "login") {
+      handleLogin()
+    } else {
+    handleRegister()
     }
-    else {
-      register()
-    }
-    
   })
 })
 
