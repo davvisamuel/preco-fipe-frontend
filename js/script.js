@@ -608,31 +608,16 @@ document.addEventListener("DOMContentLoaded", () => {
 //result
 document.addEventListener("DOMContentLoaded", async () => {
   if(!document.querySelector("#result-page")) return
+  localStorage.removeItem("favoriteId")
+  localStorage.removeItem("isFavorited")
 
   const token = getCookie("token=")
+  
   const fipeInformation = JSON.parse(localStorage.getItem("fipeInformation"))
   const query = JSON.parse(localStorage.getItem("query"))
-
-  const resultContainer = document.querySelector(".result-container")
   
-  let icon = "";
-
-  let existsFavorite = false
-  if(token != null) {
-    existsFavoriteResponseBody = await existsFavoriteGet(fipeInformation.codeFipe, query.modelYear)
-    existsFavorite = existsFavoriteResponseBody.exists
-  }
-
-  if( existsFavorite ) {
-    icon = `<i class="fa-solid fa-heart"></i>`
-    localStorage.setItem("favoriteId", existsFavoriteResponseBody.favoriteId)
-  }
-  else {
-    icon = `<i class="fa-regular fa-heart"></i>`
-  }
-  
-    
-  resultContainer.innerHTML = `
+  const template = document.createElement("template")
+  template.innerHTML = `
   <section class="fipe-information">
     <h2 class="result-title">
         ${fipeInformation.brand}
@@ -642,42 +627,76 @@ document.addEventListener("DOMContentLoaded", async () => {
     <div class="fipe-price-container">
         <div class="flex">
           <img src="img/FIPE.png" alt="Logo da FIPE">
-          ${icon}
         </div>
         <p class="fipe-price">${fipeInformation.price}</p>
         <p class="reference-month">Mês de referência: ${fipeInformation.referenceMonth}</p>
     </div>
-  </section>  `
+  </section>`
+  const clone = template.content.cloneNode(true)
 
-  const favoriteIcon = document.querySelector(".flex i")
-
-  favoriteIcon.addEventListener("click", async () => {
-    const isFavorited = favoriteIcon.classList.contains("fa-regular");
-
-    if(isFavorited) {
-      favoriteIcon.classList.replace("fa-regular", "fa-solid")
-      postFavorite(fipeInformation.codeFipe, query.modelYear, fipeInformation.fuelAcronym)
-      .then((favorite) => localStorage.setItem("favoriteId", JSON.stringify(favorite.id)))
-    }
-
-    else {
-      favoriteIcon.classList.replace("fa-solid", "fa-regular")
-      const id = JSON.parse(localStorage.getItem("favoriteId"))
-      await deleteFavorite(id)
-      localStorage.removeItem("favoriteId")
-    }
-  })
-
-  async function postFavorite(codeFipe, modelYear, fuelAcronym) {
-    const token = getCookie("token=")
+  if(token) {
+    const response = await existsFavorite(token, fipeInformation.codeFipe, query.modelYear)
     
+    switch(response.status) {
+      case 200:
+        existsFavoriteResponseBody = await response.json()
+        const i = document.createElement("i")
+        
+        const isFavorited = existsFavoriteResponseBody.exists
+        if(isFavorited) {
+          localStorage.setItem("favoriteId", existsFavoriteResponseBody.favoriteId)
+          localStorage.setItem("isFavorited", String(isFavorited))
+          i.className = "fa-solid fa-heart"
+          clone.querySelector(".flex").appendChild(i)
+
+        } else {
+          localStorage.setItem("isFavorited", String(isFavorited))
+          i.className = "fa-regular fa-heart"
+          clone.querySelector(".flex").appendChild(i)
+        }
+        
+        clone.querySelector(".flex i").addEventListener("click", handleIsFavorite)
+      break
+    }
+  }
+
+  document.querySelector(".result-container").appendChild(clone)
+
+  async function handleIsFavorite(e) {
+    const isFavorited = localStorage.getItem("isFavorited") === "true"
+        
+    if(!isFavorited) {
+      const response = await postFavorite(token, fipeInformation.codeFipe, query.modelYear, fipeInformation.fuelAcronym)
+
+      switch(response.status) {
+        case 201:
+          const body = await response.json()
+          localStorage.setItem("favoriteId", JSON.stringify(body.id))
+          localStorage.setItem("isFavorited", "true")
+          e.target.classList.replace("fa-regular", "fa-solid")
+        return
+      }   
+    }
+        
+    const id = JSON.parse(localStorage.getItem("favoriteId"))
+    const response = await deleteFavorite(token, id)
+
+    switch(response.status) {
+      case 204:
+        localStorage.removeItem("favoriteId")
+        localStorage.setItem("isFavorited", "false")
+        e.target.classList.replace("fa-solid", "fa-regular")
+      break
+    }
+  }
+  async function postFavorite(token, codeFipe, modelYear, fuelAcronym) {
     const payload = {
       codeFipe: codeFipe,
       modelYear: modelYear,
       fuelAcronym: fuelAcronym
     }
 
-    const response = await fetch(`${baseUrl()}/v1/favorite`, {
+    return await fetch(`${baseUrl()}/v1/favorite`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -685,13 +704,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       body: JSON.stringify(payload)
     })
-    return response.json()
   }
-
-  async function deleteFavorite(favoriteId) {
-    const token = getCookie("token=")
-    
-    await fetch(`${baseUrl()}/v1/favorite/${favoriteId}`, {
+  async function deleteFavorite(token, favoriteId) {
+    return await fetch(`${baseUrl()}/v1/favorite/${favoriteId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -699,18 +714,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     })
   }
-
-  async function existsFavoriteGet(codeFipe, modelYear) {
-    const token = getCookie("token=")
-
-    const response = await fetch(`${baseUrl()}/v1/favorite?codeFipe=${codeFipe}&modelYear=${modelYear}`, {
+  async function existsFavorite(token, codeFipe, modelYear) {
+    return await fetch(`${baseUrl()}/v1/favorite?codeFipe=${codeFipe}&modelYear=${modelYear}`, {
       headers: {
         "Content-Type": "application/json",
         "Authorization": token
       }
     })
-    
-    return await response.json()
   }
 })
 
