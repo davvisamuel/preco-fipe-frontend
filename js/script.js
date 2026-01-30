@@ -336,6 +336,29 @@ async function updatePassword(currentPassword, newPassword) {
 function baseUrl() {
   return `http://localhost:8080`
 }
+async function getFipeInformationByCodeFipeAndYear(vehicleType, codeFipe, modelYear) {
+    const token = getCookie("token=")
+
+    switch(vehicleType) {
+      case "Carro":
+        vehicleType = "cars"
+      break
+
+      case "Moto":
+        vehicleType = "motorcycle"
+      break
+
+      case "Caminhão":
+        vehicleType = "trucks"
+      break
+    }
+
+    return await fetch(`${baseUrl()}/v1/api/${vehicleType}/${codeFipe}/years/${modelYear}`, {
+      headers: {
+        "Authorization": token
+      }
+    });  
+}
 
 initUser();
 
@@ -457,30 +480,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.location.href = "result.html"
     }
-  }
-
-  async function getFipeInformationByCodeFipeAndYear(vehicleType, codeFipe, modelYear) {
-    const token = getCookie("token=")
-
-    switch(vehicleType) {
-      case "Carro":
-        vehicleType = "cars"
-      break
-
-      case "Moto":
-        vehicleType = "motorcycle"
-      break
-
-      case "Caminhão":
-        vehicleType = "trucks"
-      break
-    }
-
-    return await fetch(`${baseUrl()}/v1/api/${vehicleType}/${codeFipe}/years/${modelYear}`, {
-      headers: {
-        "Authorization": token
-      }
-    });  
   }
 
   async function getFavoritesPaginated(page, size) {
@@ -674,8 +673,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           localStorage.setItem("favoriteId", JSON.stringify(body.id))
           localStorage.setItem("isFavorited", "true")
           e.target.classList.replace("fa-regular", "fa-solid")
-        return
-      }   
+        break
+      } 
+      return  
     }
         
     const id = JSON.parse(localStorage.getItem("favoriteId"))
@@ -861,6 +861,9 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("DOMContentLoaded", async () => {
   const recentesPage = document.querySelector("#recentes");
   if(!recentesPage) return
+
+  const token = getCookie("token=")
+  if(!token) window.location.replace("login.html")
   
   const queryContainer = document.querySelector(".query-container");
   const deleteButton = document.querySelector(".remove-all-box");
@@ -871,118 +874,112 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function getConsultations() {
     const token = getCookie("token=");
-    if(!token) {
-      return
-    }
+    if(!token) return
 
-    const result = await fetch(`${baseUrl()}/v1/consultation?page=${page}&size=${size}&sort=id,desc`, {
+    return await fetch(`${baseUrl()}/v1/consultation?page=${page}&size=${size}&sort=id,desc`, {
       headers: {
         "Authorization": token
       }
     })
-
-    return await result.json();
   }
-
   async function appendConsultations() {
     queryContainer.innerHTML = ""
     pages.innerHTML = ""
 
-    const consultations = await getConsultations();
-    const totalPages = consultations.totalPages - 1;
+    const response = await getConsultations();
 
-    for(const c of consultations.content) {
-      const template = document.createElement("template")
-      template.innerHTML = `
-        <div class="query-box">
-          <div class="vehicle">
-              <p class="data">${c.vehicleData.brand} ${c.vehicleData.model} ${c.vehicleData.year}</p>
-              <p class="code-fipe">${c.vehicleData.codeFipe}</p>
-          </div>
-          <div class="info">
-              <p class="price">${c.price}</p>
-              <p class="reference-month">${c.referenceMonth}</p>
-          </div>
-        </div>`
-      queryContainer.appendChild(template.content);
-    }
+    switch(response.status) {
+      case 200:
+        const consultations = await response.json()
+        const totalPages = consultations.totalPages;
 
-    if(page === 0 && totalPages === 0) {
-      const template = document.createElement("template")
-      template.innerHTML = `
+        for(const c of consultations.content) {
+          const vehicleData = c.vehicleData
+
+          const template = document.createElement("template")
+          template.innerHTML = `
+            <div class="query-box">
+              <div class="vehicle">
+                  <p class="data">${vehicleData.brand} ${vehicleData.model} ${vehicleData.modelYear.substring(0, vehicleData.modelYear.indexOf("-"))}</p>
+                  <p class="code-fipe">${c.vehicleData.codeFipe}</p>
+              </div>
+              <div class="info">
+                  <p class="price">${c.price}</p>
+                  <p class="reference-month">${c.referenceMonth}</p>
+              </div>
+            </div>`
+
+          const clone = template.content.cloneNode(true)
+          clone.querySelector(".query-box").addEventListener("click", async () => {
+            const response = await getFipeInformationByCodeFipeAndYear(vehicleData.vehicleType, vehicleData.codeFipe, vehicleData.modelYear)
+
+            switch(response.status) {
+              case 200:
+                localStorage.setItem("query", JSON.stringify({brand: null, model: null, modelYear: vehicleData.modelYear, vehicleType: null}))
+                const fipeInformation = await response.json()
+                localStorage.setItem(
+                "fipeInformation",
+                JSON.stringify(fipeInformation)
+                )
+                window.location.href = "result.html"
+            }
+          })
+          queryContainer.appendChild(clone);
+        }
+
+        const template = document.createElement("template")
+        template.innerHTML = `
         <div class="current">Página ${page + 1}</div>
         `
-      pages.appendChild(template.content)
-    }
+        const clone = template.content.cloneNode(true)
 
-    if(page === 0 && totalPages > 0) {
-      const template = document.createElement("template")
-      template.innerHTML = `
-        <div class="current">Página ${page + 1}</div>
-        <div class="next">Próxima <i class="fa-solid fa-arrow-right"></i></div>
-        `
-      pages.appendChild(template.content)
+        if(page + 1 < totalPages) {
+          const template = document.createElement("template")
+          template.innerHTML = `<div class="next">Próxima <i class="fa-solid fa-arrow-right"></i></div>`
+          const nextClone = template.content.cloneNode(true)
 
-      pages.querySelector(".next").addEventListener("click",  () => {
-        page ++;
-        appendConsultations();
-      })
-    }
+          nextClone.querySelector(".next").addEventListener("click",  () => {
+            page++;
+            appendConsultations();
+          })
 
-    if(page > 0 && totalPages === page) {
-      const template = document.createElement("template")
-      template.innerHTML = `
-        <div class="previous"><i class="fa-solid fa-arrow-left"></i> Anterior</div>
-        <div class="current">Página ${page + 1}</div>
-        `
-      pages.appendChild(template.content)
+          clone.querySelector(".current").after(nextClone)
+        }
 
-      pages.querySelector(".previous").addEventListener("click",  () => {
-        page --;
-        appendConsultations();
-      })
-    }
+        if(page > 0) {
+          const template = document.createElement("template")
+          template.innerHTML = `<div class="previous"><i class="fa-solid fa-arrow-left"></i> Anterior</div>`
+          const previousClone = template.content.cloneNode(true)
 
-    if(page > 0 && totalPages !== page) {
-      const template = document.createElement("template")
-      template.innerHTML = `
-        <div class="previous"><i class="fa-solid fa-arrow-left"></i> Anterior</div>
-        <div class="current">Página ${page + 1}</div>
-        <div class="next">Próxima <i class="fa-solid fa-arrow-right"></i></div>
-        `
-      pages.appendChild(template.content)
+          previousClone.querySelector(".previous").addEventListener("click",  () => {
+            page--;
+            appendConsultations();
+          })
 
-      pages.querySelector(".previous").addEventListener("click",  () => {
-        page --;
-        appendConsultations();
-      })
+          clone.querySelector(".current").before(previousClone)
+        }
 
-      pages.querySelector(".next").addEventListener("click",  () => {
-        page ++;
-        appendConsultations();
-      })
-    }
+        pages.appendChild(clone)
+      break
+      }
   }
 
   async function deleteConsultations() {
-    const token = getCookie("token=");
-
-    if(!token) {
-      return
-    }
-
-    fetch(`http://localhost:8080/v1/consultation`, {
+    return await fetch(`http://localhost:8080/v1/consultation`, {
       method: "DELETE",
       headers: {
         "Authorization": token
       }
     })
   }
-
   async function deleteConsultationsAndRefresh() {
-    await deleteConsultations()
+    const response = await deleteConsultations()
 
-    window.location.reload()
+    switch(response.status) {
+      case 204:
+        window.location.reload()
+      break
+    }
   }
 
   appendConsultations()
