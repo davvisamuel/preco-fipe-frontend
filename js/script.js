@@ -876,7 +876,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const token = getCookie("token=");
     if(!token) return
 
-    return await fetch(`${baseUrl()}/v1/consultation?page=${page}&size=${size}&sort=id,desc`, {
+    return await fetch(`${baseUrl()}/v1/consultation?page=${page}&size=${size}&sort=createdAt,desc`, {
       headers: {
         "Authorization": token
       }
@@ -893,15 +893,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         const consultations = await response.json()
         const totalPages = consultations.totalPages;
 
+        let createdAt;
         for(const c of consultations.content) {
           const vehicleData = c.vehicleData
-
+        
           const template = document.createElement("template")
           template.innerHTML = `
             <div class="query-box">
               <div class="vehicle">
                   <p class="data">${vehicleData.brand} ${vehicleData.model} ${vehicleData.modelYear.substring(0, vehicleData.modelYear.indexOf("-"))}</p>
-                  <p class="code-fipe">${c.vehicleData.codeFipe}</p>
+                  <p class="code-fipe">${vehicleData.codeFipe}</p>
               </div>
               <div class="info">
                   <p class="price">${c.price}</p>
@@ -910,6 +911,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>`
 
           const clone = template.content.cloneNode(true)
+    
+          if(createdAt !== new Date(c.createdAt).toLocaleDateString("pt-br", {year:"numeric", month:"short", day:"numeric"})) {
+            createdAt = new Date(c.createdAt).toLocaleDateString("pt-br", {year:"numeric", month:"short", day:"numeric"})
+            const p = document.createElement("p")
+            p.className = "created-at"
+            p.textContent = `${createdAt}`
+            clone.querySelector(".query-box").before(p)
+          }
+
           clone.querySelector(".query-box").addEventListener("click", async () => {
             const response = await getFipeInformationByCodeFipeAndYear(vehicleData.vehicleType, vehicleData.codeFipe, vehicleData.modelYear)
 
@@ -973,13 +983,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
   }
   async function deleteConsultationsAndRefresh() {
-    const response = await deleteConsultations()
+    const template = document.createElement("template")
+    template.innerHTML = `
+      <div class="delete-confirm-container">
+        <div class="delete-confirm-modal">
+            <p>Remover todas as consultas?</p>
+          
+            <div class="action">
+                <div class="delete-cancel">
+                    Cancelar
+                </div>
+            
+                <div class="delete-all-confirm">
+                  Remover todas as consultas
+                </div>
+            </div>  
+        </div>
+    </div>
+    `
+    const clone = template.content.cloneNode(true)
 
-    switch(response.status) {
-      case 204:
-        window.location.reload()
-      break
-    }
+    clone.querySelector(".delete-cancel").addEventListener("click", () => {
+      document.querySelector(".delete-confirm-container").remove()
+    })
+
+    clone.querySelector(".delete-all-confirm").addEventListener("click", async () => {
+      const response = await deleteConsultations()
+
+      switch(response.status) {
+       case 204:
+         window.location.reload()
+       break
+      }
+    })
+
+    document.body.appendChild(clone)
   }
 
   appendConsultations()
