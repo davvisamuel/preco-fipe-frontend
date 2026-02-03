@@ -345,7 +345,7 @@ async function getFipeInformationByCodeFipeAndYear(vehicleType, codeFipe, modelY
       break
 
       case "Moto":
-        vehicleType = "motorcycle"
+        vehicleType = "motorcycles"
       break
 
       case "Caminhão":
@@ -528,7 +528,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const left = document.createElement("i")
           left.className = "fa-solid fa-circle-chevron-left"
 
-          left.addEventListener("click", () => {page--; appendFavorites(); console.log("Previous")})
+          left.addEventListener("click", () => {page--; appendFavorites()})
 
           favoriteSection.before(left)
         }
@@ -537,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const right = document.createElement("i")
           right.className = "fa-solid fa-circle-chevron-right"
 
-          right.addEventListener("click", () => {page++; appendFavorites(); console.log("Next")})
+          right.addEventListener("click", () => {page++; appendFavorites()})
 
           favoriteSection.after(right)
         }
@@ -908,7 +908,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                   <p class="price">${c.price}</p>
                   <p class="reference-month">${c.referenceMonth}</p>
               </div>
-            </div>`
+              <div class="delete-consultation"><i class="fa-solid fa-trash"></i></div>
+            </div>
+            `
 
           const clone = template.content.cloneNode(true)
     
@@ -934,6 +936,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 window.location.href = "result.html"
             }
           })
+
+          clone.querySelector(".delete-consultation").addEventListener("click", async (e) => {
+            e.stopPropagation()
+            const response = await deleteConsultation(c.id)
+
+            switch(response.status) {
+              case 204:
+                window.location.reload()
+              break
+            }
+          })
+
           queryContainer.appendChild(clone);
         }
 
@@ -974,6 +988,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
   }
 
+  async function deleteConsultation(id) {
+    return await fetch(`http://localhost:8080/v1/consultation/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": token
+      }
+    })
+  }
   async function deleteConsultations() {
     return await fetch(`http://localhost:8080/v1/consultation`, {
       method: "DELETE",
