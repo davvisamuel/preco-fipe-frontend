@@ -11,6 +11,33 @@ function getCookie(cookieName) {
   return null;
 }
 
+async function refreshToken() {
+  const refreshToken = localStorage.getItem("refreshToken")
+
+  const payload = {
+    refreshToken: refreshToken
+  }
+
+  const response = await fetch(baseUrl() + "/v1/auth/refresh", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+  
+  if(response.status !== 200) {
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;";
+    window.location.href = "login.html"
+  }
+
+  const body = await response.json()
+  document.cookie = `token=${body.token}; path=/`
+  localStorage.setItem("refreshToken", `${body.refreshToken}`)
+
+  return body.token
+}
+
 function initUser() {
   if(!getCookie("token=")) return
 
@@ -21,6 +48,24 @@ function initUser() {
     bindMainModalEvents()})
 }
 
+async function fetchWithRefreshToken(url, options = {}) {
+  const token = getCookie("token=")
+
+  options.headers = {
+    ...(options.headers || {}),
+    Authorization: token
+  }
+
+  let response = await fetch(url, options)
+
+  if(response.status === 403) {
+    const newToken = await refreshToken()
+    options.headers.Authorization = newToken
+    response = await fetch(url, options) 
+  }
+
+  return response
+}
 
 function createMainModal() {
   if (document.querySelector(".modal-container")) return;
@@ -74,24 +119,30 @@ function bindMainModalEvents() {
   document.querySelector(".email-change").addEventListener("click", initEmailChangeSubModal)
   document.querySelector(".password-change").addEventListener("click", initPasswordChangeSubModal)
 
-  document.querySelector(".exit").addEventListener("click", () => {
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;";
-    window.location.reload()
+  document.querySelector(".exit").addEventListener("click", async () => {
+    const refreshToken = localStorage.getItem("refreshToken")
+    console.log(refreshToken)
+    const response = await logout(refreshToken)
+
+    if(response.status === 200) {
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.reload()
+    } 
   })
   document.querySelector(".delete-account").addEventListener("click", async () => {
-    const token = getCookie("token=")
-
-    const response = await fetch(baseUrl() + "/v1/user", {
+    const response = await fetchWithRefreshToken(baseUrl() + "/v1/user", {
       method: "DELETE",
       headers: {
-        Content: "application/json",
-        Authorization: token 
+        "Content-Type": "application/json",
       }
     })
 
-    if(response.status === 204) {
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/precoFipe;"
-      window.location.reload()
+    switch(response.status) {
+      case 204:
+        localStorage.removeItem("refreshToken")
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        window.location.reload()
+      break
     }
   })
 }
@@ -296,7 +347,19 @@ async function handlePasswordChangeSubmit() {
   }
 }
 
+async function logout(refreshToken) {
+  const payload = {
+    refreshToken: refreshToken
+  }
 
+  return await fetchWithRefreshToken(baseUrl() + "/v1/auth/logout", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+}
 async function updateEmail(newEmail, currentPassword) {
   const token = getCookie("token=")
 
@@ -305,7 +368,7 @@ async function updateEmail(newEmail, currentPassword) {
     currentPassword: currentPassword
   }
 
-  return await fetch(baseUrl() + "/v1/user/email", {
+  return await fetchWithRefreshToken(baseUrl() + "/v1/user/email", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -322,7 +385,7 @@ async function updatePassword(currentPassword, newPassword) {
     newPassword: newPassword
   }
   
-  return await fetch(baseUrl() + "/v1/user/password", {
+  return await fetchWithRefreshToken(baseUrl() + "/v1/user/password", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -353,7 +416,7 @@ async function getFipeInformationByCodeFipeAndYear(vehicleType, codeFipe, modelY
       break
     }
 
-    return await fetch(`${baseUrl()}/v1/api/${vehicleType}/${codeFipe}/years/${modelYear}`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/api/${vehicleType}/${codeFipe}/years/${modelYear}`, {
       headers: {
         "Authorization": token
       }
@@ -451,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return await fetch(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`);
     }
 
-    return await fetch(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/api/${vehicleType}/brands/${brand}/models/${model}/years/${modelYear}`, {
       headers: {
         "Authorization": token
       }
@@ -479,14 +542,17 @@ document.addEventListener("DOMContentLoaded", () => {
         )
 
         window.location.href = "result.html"
-    }
+      case 403:
+        await refresh()
+        appendFipeInformation(e)
+      }
   }
 
   async function getFavoritesPaginated(page, size) {
     const token = getCookie("token=")
     if(!token) return
 
-    return await fetch(`${baseUrl()}/v1/favorite/paginated?page=${page}&size=${size}&sort=id,desc`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/favorite/paginated?page=${page}&size=${size}&sort=id,desc`, {
       headers: {
         "Authorization": token
       }
@@ -578,11 +644,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 JSON.stringify(fipeInformation)
                 )
                 window.location.href = "result.html"
+              break
             }
           })
         
           favoriteSection.appendChild(clone)
         }
+      break
+      case 403:
+        await refresh()
       break
     }
     loading = false
@@ -656,6 +726,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         clone.querySelector(".flex i").addEventListener("click", handleIsFavorite)
       break
+      case 403:
+        await refresh()
+        window.location.reload()
     }
   }
 
@@ -674,6 +747,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           localStorage.setItem("isFavorited", "true")
           e.target.classList.replace("fa-regular", "fa-solid")
         break
+
+        case 403:
+          await refresh()
+          handleIsFavorite(e)
       } 
       return  
     }
@@ -687,6 +764,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("isFavorited", "false")
         e.target.classList.replace("fa-solid", "fa-regular")
       break
+
+      case 403:
+        await refresh()
+        handleIsFavorite(e)
     }
   }
   async function postFavorite(token, codeFipe, modelYear, fuelAcronym) {
@@ -696,7 +777,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       fuelAcronym: fuelAcronym
     }
 
-    return await fetch(`${baseUrl()}/v1/favorite`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/favorite`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -706,7 +787,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
   }
   async function deleteFavorite(token, favoriteId) {
-    return await fetch(`${baseUrl()}/v1/favorite/${favoriteId}`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/favorite/${favoriteId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -715,7 +796,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
   }
   async function existsFavorite(token, codeFipe, modelYear) {
-    return await fetch(`${baseUrl()}/v1/favorite?codeFipe=${codeFipe}&modelYear=${modelYear}`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/favorite?codeFipe=${codeFipe}&modelYear=${modelYear}`, {
       headers: {
         "Content-Type": "application/json",
         "Authorization": token
@@ -761,6 +842,7 @@ document.addEventListener("DOMContentLoaded", () => {
         case 200:
           const body = await response.json()
           document.cookie = `token=${body.token}; path=/`
+          localStorage.setItem("refreshToken", body.refreshToken)
           window.location.replace("/precoFipe/index.html")
         break
 
@@ -876,7 +958,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const token = getCookie("token=");
     if(!token) return
 
-    return await fetch(`${baseUrl()}/v1/consultation?page=${page}&size=${size}&sort=createdAt,desc`, {
+    return await fetchWithRefreshToken(`${baseUrl()}/v1/consultation?page=${page}&size=${size}&sort=createdAt,desc`, {
       headers: {
         "Authorization": token
       }
@@ -985,11 +1067,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         pages.appendChild(clone)
       break
-      }
+    }
   }
 
   async function deleteConsultation(id) {
-    return await fetch(`http://localhost:8080/v1/consultation/${id}`, {
+    return await fetchWithRefreshToken(`http://localhost:8080/v1/consultation/${id}`, {
       method: "DELETE",
       headers: {
         "Authorization": token
@@ -997,7 +1079,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
   }
   async function deleteConsultations() {
-    return await fetch(`http://localhost:8080/v1/consultation`, {
+    return await fetchWithRefreshToken(`http://localhost:8080/v1/consultation`, {
       method: "DELETE",
       headers: {
         "Authorization": token
