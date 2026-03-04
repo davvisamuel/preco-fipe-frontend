@@ -121,7 +121,6 @@ function bindMainModalEvents() {
 
   document.querySelector(".exit").addEventListener("click", async () => {
     const refreshToken = localStorage.getItem("refreshToken")
-    console.log(refreshToken)
     const response = await logout(refreshToken)
 
     if(response.status === 200) {
@@ -269,10 +268,12 @@ function initPasswordChangeSubModal() {
 }
 
 
-function handleEmailChangeSubmit() {
+async function handleEmailChangeSubmit() {
   const newEmail = document.querySelector("#new-email")
   const confirmEmail = document.querySelector("#confirm-email")
   const currentPassword = document.querySelector("#current-password")
+  const modalSecondary = document.querySelector(".modal-secondary")
+  const userContainer = document.querySelector(".user-container")
 
   if(newEmail.value !== confirmEmail.value) {
     confirmEmail.classList.add("error")
@@ -286,11 +287,11 @@ function handleEmailChangeSubmit() {
   const p = document.createElement("p")
   p.className = "error-message"
 
-  updateEmail(newEmail.value, currentPassword.value)
+  const response = await updateEmail(newEmail.value, currentPassword.value)
 
   switch(response.status) {
     case 204: 
-    userContainer.removeChild(modalSecondary) 
+      userContainer.removeChild(modalSecondary) 
     break
     case 409:
       newEmail.classList.add("error")
@@ -313,6 +314,8 @@ async function handlePasswordChangeSubmit() {
   const newPassword = document.querySelector("#new-password")
   const confirmPassword = document.querySelector("#confirm-password")
   const currentPassword = document.querySelector("#current-password")
+  const modalSecondary = document.querySelector(".modal-secondary")
+  const userContainer = document.querySelector(".user-container")
 
   document.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
   document.querySelectorAll(".error-message").forEach(e => e.remove())
